@@ -182,7 +182,7 @@ void label(matp __mat, mdl_i8_t *__exit) {
 		return;
 	} else
 		*__exit = -1;
-	
+
 	char const *name = lex(__mat)->p;
 
 	parameterp *param = (parameterp*)malloc(20*sizeof(parameterp));
@@ -257,14 +257,19 @@ void label(matp __mat, mdl_i8_t *__exit) {
 	act(__mat, &p);
 }
 
-# define WIDTH 80
+# define WD_SH 7
+
+# define WIDTH (1<<WD_SH)
 # define HEIGHT 40
 
 char frame[WIDTH*HEIGHT];
 char buf[WIDTH*HEIGHT];
 char **bkbuf;
 void act(matp __mat, pillp __pill) {
-	*bkbuf = *(bkbuf-1);
+	if (!*(bkbuf-1))
+		*bkbuf = frame;
+	else
+		*bkbuf = *(bkbuf-1);
 	char *p = *(bkbuf++);
 
 	mdl_u8_t rc = 0;
@@ -272,7 +277,7 @@ void act(matp __mat, pillp __pill) {
 		if (is_bit(__pill, _padl))
 			p+=__pill->pad_left;
 		if (is_bit(__pill, _padt))
-			p+=__pill->pad_top*HEIGHT;
+			p+=__pill->pad_top*WIDTH;
 	
 		if (is_bit(__pill, _r) || is_bit(__pill, _g) || is_bit(__pill, _b)) {
 			char r[24];
@@ -300,7 +305,10 @@ void act(matp __mat, pillp __pill) {
 		mdl_i8_t exit;
 		if (tok->sort == _keychr && tok->val == _lt) {
 			*(bkbuf-1) = p;
-			label(__mat, &exit);
+			if (!next_tokis(__mat, _keychr, _gt))
+				act(__mat, NULL);
+			else
+				label(__mat, &exit);
 			p = *(bkbuf-1);
 			if (!exit) break;
 		}
@@ -319,13 +327,21 @@ void act(matp __mat, pillp __pill) {
 		strncpy(p, "\e[0m", 4);
 		p+=4;
 	}
-	*((--bkbuf)-1) = p;
+
+	if (!*(bkbuf-2))
+		bkbuf--;
+	else {
+		if (*(bkbuf-3) != NULL)
+			*((--bkbuf)-1) = p;
+		else
+			bkbuf--;
+	}
 }
 
 # include <string.h>
 void matact(matp __mat) {
 	bkbuf = (char**)malloc(12*sizeof(char*));
-	*(bkbuf++) = frame;
+	*(bkbuf++) = NULL;
 	char *p = frame;
 	while(p != frame+(WIDTH*HEIGHT)) {
 		memset(p, '.', WIDTH);
