@@ -214,10 +214,10 @@ void label(matp __mat, mdl_i8_t *__exit) {
 		p.type = _pos;
 		parameterp cur;
 		while((cur = *(--param)) != NULL) {
-			if (strcmp(cur->name, "padl")) {
+			if (!strcmp(cur->name, "padl")) {
 				p.bits |= _padl;
 				p.pad_left = strtol(cur->val, NULL, 10);
-			} else if (strcmp(cur->name, "padt")) {
+			} else if (!strcmp(cur->name, "padt")) {
 				p.bits |= _padt;
 				p.pad_top = strtol(cur->val, NULL, 10);
 			}
@@ -232,8 +232,9 @@ void label(matp __mat, mdl_i8_t *__exit) {
 # define HEIGHT 40
 
 char frame[WIDTH*HEIGHT];
-char *p = frame;
+
 void act(matp __mat, pillp __pill) {
+	char *p = frame;
 	bucketp tok;
 	while(!at_eof(__mat)) {
 		if (!(tok = lex(__mat)))
