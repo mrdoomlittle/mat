@@ -23,11 +23,11 @@ enum {
 	_pos
 };
 
-# define _padl 0x1
-# define _padt 0x2
-# define _r 0x4
-# define _g 0x8
-# define _b 0x16
+# define _padl 1
+# define _padt 2
+# define _r 4
+# define _g 8
+# define _b 16
 
 # define is_bit(__pill, __bit) \
 	(((__pill)->bits&__bit)==__bit)
@@ -183,8 +183,8 @@ void label(matp __mat, mdl_i8_t *__exit) {
 	} else
 		*__exit = -1;
 	
-	bucketp name = lex(__mat);
-	printf("%s\n", name->p);
+	char const *name = lex(__mat)->p;
+
 	parameterp *param = (parameterp*)malloc(20*sizeof(parameterp));
 	*(param++) = NULL;
 	if (!next_tokis(__mat, _keychr, _colon)) {
@@ -214,12 +214,12 @@ void label(matp __mat, mdl_i8_t *__exit) {
 
 	struct pill p;
 	p.bits = 0;
-	if (strcmp(name->p, "colour")) {
+	if (!strcmp(name, "colour")) {
 		p.type = _colour;
-	} else if (strcmp(name->p, "pos")) {
+	} else if (!strcmp(name, "pos")) {
 		p.type = _pos;
-	}
-
+	} else
+		printf("error.\n");
 
 	parameterp cur;
 	while((cur = *(--param)) != NULL) {
@@ -250,7 +250,9 @@ void label(matp __mat, mdl_i8_t *__exit) {
 			p.bits |= _padt;
 			p.pad_top = strtol(cur->val, NULL, 10);
 		}
+		free(*param);
 	}
+
 	free(param);
 	act(__mat, &p);
 }
@@ -282,24 +284,27 @@ void act(matp __mat, pillp __pill) {
 			snprintf(g, 24, "%u", __pill->g);
 			snprintf(b, 24, "%u", __pill->b);
 
-			p+=snprintf(p,200,"\e[38;2;%s;%s;%sm", r, g, b);
+			p+=snprintf(p,100,"\e[38;2;%s;%s;%sm", r, g, b);
 			*p = '.';
 		}
 	}
 	
 	bucketp tok;
 	while(!at_eof(__mat)) {
-		char const *pry = __mat->p;
+		while(*__mat->p == '\n')
+			__mat->p++;
+		if (*__mat->p != '<')
+			goto _no;
 		if (!(tok = lex(__mat)))
 			break;
 		mdl_i8_t exit;
 		if (tok->sort == _keychr && tok->val == _lt) {
 			*(bkbuf-1) = p;
 			label(__mat, &exit);
+			p = *(bkbuf-1);
 			if (!exit) break;
-		} else 
-			__mat->p = pry;
-			
+		}
+		_no:
 
 		while(*__mat->p != '<' && !at_eof(__mat)) {
 			if (*p == '\n') p++;
@@ -310,9 +315,11 @@ void act(matp __mat, pillp __pill) {
 		}
 	}
 
-	if (rc)
+	if (rc) {
 		strncpy(p, "\e[0m", 4);
-	bkbuf--;
+		p+=4;
+	}
+	*((--bkbuf)-1) = p;
 }
 
 # include <string.h>
