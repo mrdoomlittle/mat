@@ -313,13 +313,15 @@ void act(matp __mat, pillp __pill) {
 			if (!exit) break;
 		}
 		_no:
-
-		while(*__mat->p != '<' && !at_eof(__mat)) {
-			if (*p == '\n') p++;
-			if (*__mat->p == '\n')
-				__mat->p++;
-			else
-				*(p++) = *(__mat->p++);
+		{
+			char c;
+			while((c = *__mat->p) != '<' && !at_eof(__mat)) {
+				if (*p == '\n') p++;
+				if (c == '\n' || c == '\t')
+					__mat->p++;
+				else
+					*(p++) = *(__mat->p++);
+			}
 		}
 	}
 
